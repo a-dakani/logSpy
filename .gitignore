@@ -3,3 +3,4 @@
 *.log
 config.services.yaml
 *.conf
+logSpy

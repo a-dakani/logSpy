@@ -2,9 +2,9 @@ package main
 
 import (
 	"flag"
-	"github.com/a-dakani/LogSpy/configs"
-	"github.com/a-dakani/LogSpy/logger"
-	"github.com/a-dakani/LogSpy/spy"
+	"github.com/a-dakani/logSpy/configs"
+	"github.com/a-dakani/logSpy/logger"
+	"github.com/a-dakani/logSpy/spy"
 	"reflect"
 	"strings"
 )

@@ -3,12 +3,13 @@ package spy
 import (
 	"bufio"
 	"fmt"
-	"github.com/a-dakani/LogSpy/configs"
-	"github.com/a-dakani/LogSpy/logger"
+	"github.com/a-dakani/logSpy/configs"
+	"github.com/a-dakani/logSpy/logger"
 	"github.com/jcmturner/gokrb5/v8/config"
 	"golang.org/x/crypto/ssh"
 	"io"
 	"os"
+	"sync"
 )
 
 type Spy struct {
@@ -73,33 +74,46 @@ func (spy *Spy) CreateClient() error {
 }
 
 func (spy *Spy) TailFiles() error {
-	//FIXME this only tails the first file
+	var wg sync.WaitGroup
+
 	for index, file := range spy.Service.Files {
+		wg.Add(1)
 		sess, err := spy.Client.NewSession()
 		if err != nil {
 			return err
 		}
+		spy.Sessions = append(spy.Sessions, sess)
 
 		sessStdOut, err := sess.StdoutPipe()
 		if err != nil {
 			return err
 		}
-		go copyWithAppend(os.Stdout, sessStdOut, fmt.Sprintf("[%s]", file.Alias))
+		go func() {
+			defer wg.Done()
+			copyWithAppend(os.Stdout, sessStdOut, fmt.Sprintf("[%s] ", spy.Service.Files[index].Alias))
+		}()
 
 		sessStderr, err := sess.StderrPipe()
 		if err != nil {
 			return err
 		}
-		go copyWithAppend(os.Stderr, sessStderr, fmt.Sprintf("[%s]", file.Alias))
+		go func() {
+			defer wg.Done()
+			copyWithAppend(os.Stderr, sessStderr, fmt.Sprintf("[%s] ", spy.Service.Files[index].Alias))
+		}()
 
-		spy.Sessions = append(spy.Sessions, sess)
 		logger.Info(fmt.Sprintf("[%s] Tailing %s", spy.Service.Host, file.Path))
-		err = spy.Sessions[index].Run(fmt.Sprintf("tail -f %s", file.Path))
-		if err != nil {
-			return err
-		}
+		go func(index int, path string) {
+			defer wg.Done()
+			err := spy.Sessions[index].Run(fmt.Sprintf("tail -f %s", path))
+			if err != nil {
+
+			}
+		}(index, file.Path)
 	}
+	wg.Wait()
 	return nil
+
 }
 
 func copyWithAppend(dst io.Writer, src io.Reader, appendStr string) {

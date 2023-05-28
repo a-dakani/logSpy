@@ -3,7 +3,7 @@ package spy
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/a-dakani/LogSpy/logger"
+	"github.com/a-dakani/logSpy/logger"
 	"github.com/jcmturner/gokrb5/v8/client"
 	"github.com/jcmturner/gokrb5/v8/config"
 	"github.com/jcmturner/gokrb5/v8/crypto"

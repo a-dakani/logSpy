@@ -1,7 +1,7 @@
 package configs
 
 import (
-	"github.com/a-dakani/LogSpy/logger"
+	"github.com/a-dakani/logSpy/logger"
 	"gopkg.in/yaml.v3"
 	"os"
 )

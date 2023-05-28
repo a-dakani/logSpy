@@ -1,4 +1,4 @@
-module github.com/a-dakani/LogSpy
+module github.com/a-dakani/logSpy
 
 go 1.20
 

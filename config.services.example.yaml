@@ -1,10 +1,12 @@
 #Example Service
 #Rename to config.services.yaml and add your services
+#If private_key_path and krb5_conf_path are both provided, both auth methods are gonna be provided to the client 
 services:
     - name: spyName
       host: spyHost.live.com
       user: spyUser
       port: 22
+      #private_key_path: ~/.ssh/id_rsa
       krb5_conf_path: /etc/kerb5.conf
       files:
           - alias: spy-1

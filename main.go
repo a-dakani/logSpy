@@ -4,7 +4,7 @@ import (
 	"flag"
 	"github.com/a-dakani/LogSpy/configs"
 	"github.com/a-dakani/LogSpy/logger"
-	"github.com/a-dakani/LogSpy/ssh"
+	"github.com/a-dakani/LogSpy/spy"
 	"reflect"
 	"strings"
 )
@@ -22,6 +22,7 @@ var host = flag.String("h", "", "host to connect to -h=192.168.1.1")
 var user = flag.String("u", "", "user to connect to host -u=admin")
 var port = flag.Int("p", 22, "port to connect to host -p=22")
 var privateKey = flag.String("pk", "", "private key location to connect to host -pk=/home/user/.ssh/id_rsa")
+var krb5Conf = flag.String("krb5", "", "krb5.conf location to connect to host -krb5=/etc/krb5.conf")
 var filterWords = flag.String("f", "", "filter for the log files -f=ERROR,WARN,FATAL,EXCEPTION")
 
 func init() {
@@ -45,7 +46,8 @@ func init() {
 			User:           *user,
 			Port:           *port,
 			PrivateKeyPath: *privateKey,
-			Files:          strings.Split(*files, ","),
+			Krb5ConfPath:   *krb5Conf,
+			Files:          configs.ParseFiles(*files),
 		}
 		if !srv.IsFullyConfigured() {
 			logger.ProcessArgumentError()
@@ -62,25 +64,19 @@ func init() {
 }
 
 func main() {
-	client := ssh.Client{
-		Service:  srv,
-		Password: "test",
+	s := spy.Spy{
+		Service: srv,
 	}
-	err := client.DialClient()
+	err := s.CreateClient()
 	if err != nil {
-		logger.Fatal(err.Error())
-		return
+		logger.Warning(err.Error())
 	}
-	err = client.GetSession()
-	if err != nil {
-		logger.Fatal(err.Error())
-		return
-	}
-	output, err := client.Session.CombinedOutput("pwd")
-	if err != nil {
-		logger.Fatal(err.Error())
-		return
-	}
+	defer s.CloseClient()
 
-	logger.Info(string(output))
+	err = s.TailFiles()
+	if err != nil {
+		logger.Warning(err.Error())
+	}
+	defer s.CloseSessions()
+
 }

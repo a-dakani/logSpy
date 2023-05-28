@@ -26,12 +26,9 @@ cd logSpy
 ```bash
 go build
 ```
+5. Add your services and their connection details to the `config.services.yaml` file. You can use the `config.services.yaml.example` file as a template.
 
-5. Optionally, you can install LogSpy globally on your system by moving the binary to a directory in your system's PATH:
 
-```bash
-sudo mv LogSpy /usr/local/bin
-```
 
 ## Usage
 

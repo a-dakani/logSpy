@@ -1,4 +1,4 @@
-# LogSpy
+# LogSpy (WIP)
 
 
 LogSpy is a command-line tool written in Go that connects to a remote server and tails log files. It provides functionality to monitor and filter log entries based on specified criteria. LogSpy supports connecting using either a private key or a Kerberos ticket.

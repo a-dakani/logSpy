@@ -27,18 +27,30 @@ var filterWords = flag.String("f", "", "filter for the log files -f=ERROR,WARN,F
 
 func init() {
 	flag.Parse()
-	configs.LoadConfig(&cfg)
+
+	err := configs.LoadConfig(&cfg)
+	if err != nil {
+		panic(err)
+	}
+
 	if *service != "" {
-		configs.LoadServices(&srvs)
+		err = configs.LoadServices(&srvs)
+		if err != nil {
+			panic(err)
+		}
+
 		for _, confSrv := range srvs.Services {
 			if confSrv.Name == *service {
 				srv = confSrv
 				break
 			}
 		}
+
 		if reflect.DeepEqual(srv, configs.Service{}) {
 			logger.Fatal("Service not found in config.services.yaml")
+			panic("Service not found in config.services.yaml")
 		}
+
 	} else {
 		srv = configs.Service{
 			Name:           "ArgService",
@@ -49,9 +61,9 @@ func init() {
 			Krb5ConfPath:   *krb5Conf,
 			Files:          configs.ParseFiles(*files),
 		}
-		if !srv.IsFullyConfigured() {
+		if _, err = srv.IsFullyConfigured(); err != nil {
 			logger.ProcessArgumentError()
-
+			panic(err)
 		}
 	}
 	filters = strings.Split(*filterWords, ",")
@@ -69,13 +81,15 @@ func main() {
 	}
 	err := s.CreateClient()
 	if err != nil {
-		logger.Warning(err.Error())
+		logger.Fatal(err.Error())
+		panic(err)
 	}
 	defer s.CloseClient()
 
 	err = s.TailFiles()
 	if err != nil {
 		logger.Warning(err.Error())
+		panic(err)
 	}
 	defer s.CloseSessions()
 

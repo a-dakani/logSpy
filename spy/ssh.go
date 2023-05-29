@@ -52,7 +52,6 @@ func (spy *Spy) CreateClient() error {
 	//If krb5 conf path is provided, use it
 	if spy.Service.Krb5ConfPath != "" {
 		c, _ := config.Load(spy.Service.Krb5ConfPath)
-
 		//FIXME Error handling is shit for wrong password or unreachable auth server
 
 		sshGSSAPIClient, err := NewKrb5InitiatorClient(spy.Service.User, c)
@@ -66,7 +65,7 @@ func (spy *Spy) CreateClient() error {
 
 	spy.Client, err = ssh.Dial("tcp", fmt.Sprintf("%s:%d", spy.Service.Host, spy.Service.Port), conf)
 	if err != nil {
-		logger.Warning(fmt.Sprintf("[%s] unable to connect: %s", spy.Service.Host, err))
+		logger.Warning(fmt.Sprintf("Unable to connect to [%s]", spy.Service.Host))
 		return err
 	}
 
@@ -90,7 +89,7 @@ func (spy *Spy) TailFiles() error {
 		}
 		go func() {
 			defer wg.Done()
-			copyWithAppend(os.Stdout, sessStdOut, fmt.Sprintf("[%s] ", spy.Service.Files[index].Alias))
+			formattedCopy(os.Stdout, sessStdOut, fmt.Sprintf("[%s]=> ", spy.Service.Files[index].Alias), logger.Red+index)
 		}()
 
 		sessStderr, err := sess.StderrPipe()
@@ -99,7 +98,7 @@ func (spy *Spy) TailFiles() error {
 		}
 		go func() {
 			defer wg.Done()
-			copyWithAppend(os.Stderr, sessStderr, fmt.Sprintf("[%s] ", spy.Service.Files[index].Alias))
+			formattedCopy(os.Stderr, sessStderr, fmt.Sprintf("[%s]=> ", spy.Service.Files[index].Alias), logger.Red+index)
 		}()
 
 		logger.Info(fmt.Sprintf("[%s] Tailing %s", spy.Service.Host, file.Path))
@@ -107,7 +106,13 @@ func (spy *Spy) TailFiles() error {
 			defer wg.Done()
 			err := spy.Sessions[index].Run(fmt.Sprintf("tail -f %s", path))
 			if err != nil {
-
+				logger.Warning(fmt.Sprintf("[%s] Unable to tail %s", spy.Service.Host, path))
+				return
+			}
+			err = spy.Sessions[index].Wait()
+			if err != nil {
+				logger.Warning(fmt.Sprintf("[%s] Unable to wait for %s", spy.Service.Host, path))
+				return
 			}
 		}(index, file.Path)
 	}
@@ -116,11 +121,11 @@ func (spy *Spy) TailFiles() error {
 
 }
 
-func copyWithAppend(dst io.Writer, src io.Reader, appendStr string) {
+func formattedCopy(dst io.Writer, src io.Reader, appendStr string, color int) {
 	scanner := bufio.NewScanner(src)
 	for scanner.Scan() {
 		line := scanner.Text()
-		lineWithAppend := appendStr + line + "\n"
+		lineWithAppend := logger.Colorize(appendStr, color) + line + "\n"
 		io.WriteString(dst, lineWithAppend)
 	}
 }

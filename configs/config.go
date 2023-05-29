@@ -1,11 +1,16 @@
 package configs
 
 import (
-	"github.com/a-dakani/logSpy/logger"
+	"errors"
 	"os"
 	"strconv"
 	"strings"
 )
+
+type File struct {
+	Alias string `yaml:"alias"`
+	Path  string `yaml:"path"`
+}
 
 type Service struct {
 	Name           string `yaml:"name"`
@@ -16,10 +21,7 @@ type Service struct {
 	Krb5ConfPath   string `yaml:"krb5_conf_path"`
 	Files          []File `yaml:"files"`
 }
-type File struct {
-	Alias string `yaml:"alias"`
-	Path  string `yaml:"path"`
-}
+
 type Services struct {
 	Services []Service `yaml:"services"`
 }
@@ -29,36 +31,34 @@ type Config struct {
 	Version string `yaml:"version"`
 }
 
-func (s *Service) IsFullyConfigured() bool {
+func (s *Service) IsFullyConfigured() (bool, error) {
 	propsDefined := s.Name != "" && s.Host != "" && s.User != "" && s.Port != 0 && (s.PrivateKeyPath != "" || s.Krb5ConfPath != "") && len(s.Files) > 0
 	if !propsDefined {
-		logger.Warning("Service is not fully configured")
-		return false
+		return false, errors.New("service properties are not fully defined")
 	} else {
 		if (s.PrivateKeyPath != "" && !fileExist(s.PrivateKeyPath)) ||
 			(s.Krb5ConfPath != "" && !fileExist(s.Krb5ConfPath)) {
-			logger.Warning("Private key or krb5.conf file does not exist")
-			return false
+			return false, errors.New("private key or krb5.conf file does not exist")
 		}
 
 	}
 	for _, file := range s.Files {
 		if file.Path == "" || file.Alias == "" {
-			logger.Warning("File path or alias is not defined")
-			return false
+			return false, errors.New("file path or alias is not defined")
 
 		}
 	}
-	return true
+	return true, nil
 }
 
-func (s *Services) IsFullyConfigured() bool {
+func (s *Services) IsFullyConfigured() (bool, error) {
 	for _, service := range s.Services {
-		if !service.IsFullyConfigured() {
-			return false
+		if _, err := service.IsFullyConfigured(); err != nil {
+			return false, err
 		}
 	}
-	return true
+
+	return true, nil
 }
 
 func fileExist(path string) bool {
@@ -74,7 +74,7 @@ func ParseFiles(files string) []File {
 	var parsedFiles []File
 	if files != "" {
 		for index, file := range strings.Split(files, ",") {
-			parsedFiles = append(parsedFiles, File{Alias: strconv.Itoa(index), Path: file})
+			parsedFiles = append(parsedFiles, File{Alias: strconv.Itoa(index + 1), Path: file})
 		}
 	}
 	return parsedFiles

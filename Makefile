@@ -13,22 +13,20 @@ BINARY_NAME = logSpy
 .DEFAULT_GOAL := build
 
 # Build the program
-build: clean copyConfig
+build: clean
+	@echo "Creating folder $(BUILD_DIR)..."
+	@mkdir -p $(BUILD_DIR)
 	@echo "Building $(BINARY_NAME)..."
-	@mkdir -p $(BUILD_DIR)
 	@go build -o $(BUILD_DIR)/$(BINARY_NAME) ./cmd/logSpy
-
-# Clean the build
-clean:
-	@echo "Cleaning..."
-	@go clean
-	@rm -rf $(BUILD_DIR)
-
-# Copy Config files
-copyConfig:
 	@echo "Copying config files..."
-	@mkdir -p $(BUILD_DIR)
 	cp $(CONFIG) $(BUILD_DIR)/$(CONFIG)
 	cp $(SRV_CONFIG_EX) $(BUILD_DIR)/$(SRV_CONFIG)
 
-.PHONY: build clean copy-config
+# Clean the build
+clean:
+	@echo "Cleaning dependencies..."
+	@go clean
+	@echo "Removing $(BUILD_DIR) ..."
+	@rm -rf $(BUILD_DIR)
+
+.PHONY: build clean

@@ -1,10 +1,10 @@
-package spy
+package ssh
 
 import (
 	"bufio"
 	"fmt"
 	"github.com/a-dakani/logSpy/configs"
-	"github.com/a-dakani/logSpy/logger"
+	"github.com/a-dakani/logSpy/pkg/utils"
 	"github.com/jcmturner/gokrb5/v8/config"
 	"golang.org/x/crypto/ssh"
 	"io"
@@ -37,17 +37,17 @@ func (spy *Spy) CreateClient() error {
 	if spy.Service.PrivateKeyPath != "" {
 		pemBytes, err := os.ReadFile(spy.Service.PrivateKeyPath)
 		if err != nil {
-			logger.Warning("Private key file does not exist")
+			utils.Warning("Private key file does not exist")
 			return err
 		}
 		// create signer
 		signer, err := ssh.ParsePrivateKey(pemBytes)
 		if err != nil {
-			logger.Warning("Private key file is not valid")
+			utils.Warning("Private key file is not valid")
 			return err
 		}
 		conf.Auth = append(conf.Auth, ssh.PublicKeys(signer))
-		logger.Info(fmt.Sprintf("[%s] Using private key %s ", spy.Service.Host, spy.Service.PrivateKeyPath))
+		utils.Info(fmt.Sprintf("[%s] Using private key %s ", spy.Service.Host, spy.Service.PrivateKeyPath))
 	}
 	//If krb5 conf path is provided, use it
 	if spy.Service.Krb5ConfPath != "" {
@@ -56,16 +56,16 @@ func (spy *Spy) CreateClient() error {
 
 		sshGSSAPIClient, err := NewKrb5InitiatorClient(spy.Service.User, c)
 		if err != nil {
-			logger.Warning("Unable to create sshGSSAPIClient")
+			utils.Warning("Unable to create sshGSSAPIClient")
 			return err
 		}
 		conf.Auth = append(conf.Auth, ssh.GSSAPIWithMICAuthMethod(&sshGSSAPIClient, spy.Service.Host))
-		logger.Info(fmt.Sprintf(" [%s] Using krb5 conf %s", spy.Service.Host, spy.Service.Krb5ConfPath))
+		utils.Info(fmt.Sprintf(" [%s] Using krb5 conf %s", spy.Service.Host, spy.Service.Krb5ConfPath))
 	}
 
 	spy.Client, err = ssh.Dial("tcp", fmt.Sprintf("%s:%d", spy.Service.Host, spy.Service.Port), conf)
 	if err != nil {
-		logger.Warning(fmt.Sprintf("Unable to connect to [%s]", spy.Service.Host))
+		utils.Warning(fmt.Sprintf("Unable to connect to [%s]", spy.Service.Host))
 		return err
 	}
 
@@ -89,7 +89,7 @@ func (spy *Spy) TailFiles() error {
 		}
 		go func() {
 			defer wg.Done()
-			formattedCopy(os.Stdout, sessStdOut, fmt.Sprintf("[%s]=> ", spy.Service.Files[index].Alias), logger.Red+index)
+			formattedCopy(os.Stdout, sessStdOut, fmt.Sprintf("[%s]=> ", spy.Service.Files[index].Alias), utils.Red+index)
 		}()
 
 		sessStderr, err := sess.StderrPipe()
@@ -98,20 +98,20 @@ func (spy *Spy) TailFiles() error {
 		}
 		go func() {
 			defer wg.Done()
-			formattedCopy(os.Stderr, sessStderr, fmt.Sprintf("[%s]=> ", spy.Service.Files[index].Alias), logger.Red+index)
+			formattedCopy(os.Stderr, sessStderr, fmt.Sprintf("[%s]=> ", spy.Service.Files[index].Alias), utils.Red+index)
 		}()
 
-		logger.Info(fmt.Sprintf("[%s] Tailing %s", spy.Service.Host, file.Path))
+		utils.Info(fmt.Sprintf("[%s] Tailing %s", spy.Service.Host, file.Path))
 		go func(index int, path string) {
 			defer wg.Done()
 			err := spy.Sessions[index].Run(fmt.Sprintf("tail -f %s", path))
 			if err != nil {
-				logger.Warning(fmt.Sprintf("[%s] Unable to tail %s", spy.Service.Host, path))
+				utils.Warning(fmt.Sprintf("[%s] Unable to tail %s", spy.Service.Host, path))
 				return
 			}
 			err = spy.Sessions[index].Wait()
 			if err != nil {
-				logger.Warning(fmt.Sprintf("[%s] Unable to wait for %s", spy.Service.Host, path))
+				utils.Warning(fmt.Sprintf("[%s] Unable to wait for %s", spy.Service.Host, path))
 				return
 			}
 		}(index, file.Path)
@@ -125,20 +125,20 @@ func formattedCopy(dst io.Writer, src io.Reader, appendStr string, color int) {
 	scanner := bufio.NewScanner(src)
 	for scanner.Scan() {
 		line := scanner.Text()
-		lineWithAppend := logger.Colorize(appendStr, color) + line + "\n"
+		lineWithAppend := utils.Colorize(appendStr, color) + line + "\n"
 		io.WriteString(dst, lineWithAppend)
 	}
 }
 
 func (spy *Spy) CloseSessions() {
-	logger.Info(fmt.Sprintf("[%s] Closing sessions", spy.Service.Host))
+	utils.Info(fmt.Sprintf("[%s] Closing sessions", spy.Service.Host))
 	for _, sess := range spy.Sessions {
 		sess.Close()
 	}
 }
 
 func (spy *Spy) CloseClient() {
-	logger.Info(fmt.Sprintf("[%s] Closing client", spy.Service.Host))
+	utils.Info(fmt.Sprintf("[%s] Closing client", spy.Service.Host))
 	spy.Client.Close()
 
 }

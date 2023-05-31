@@ -1,6 +1,5 @@
 # LogSpy (WIP)
 
-
 LogSpy is a command-line tool written in Go that connects to a remote server and tails log files. It provides functionality to monitor and filter log entries based on specified criteria. LogSpy supports connecting using either a private key or a Kerberos ticket.
 
 ## Installation
@@ -15,20 +14,19 @@ To install LogSpy, follow these steps:
 git clone https://github.com/a-dakani/logSpy.git
 ```
 
-3. Change into the LogSpy directory:
+3. Navigate to the LogSpy directory:
 
 ```bash
 cd logSpy
 ```
 
-4. Build the LogSpy binary using the Go compiler:
+4. Build the LogSpy binary:
 
 ```bash
-go build
+make build
 ```
-5. Add your services and their connection details to the `config.services.yaml` file. You can use the `config.services.yaml.example` file as a template.
 
-
+5- The binary and the configuration file will be available in the `/build` directory.
 
 ## Usage
 
@@ -52,23 +50,45 @@ Here are a few examples to demonstrate how LogSpy can be used:
 1. Tailing log files using predefined service:
 
 ```bash
-logSpy -srv myService
+./build/logSpy -srv myService
 ```
 
 2. Tailing log files using command-line arguments:
 
 ```bash
-logSpy -fs=/var/log/app.log,/var/log/error.log -h=192.168.1.1 -u=admin -p=22 -pk=/path/to/private/key -f=ERROR,WARN
+./build/logSpy -fs=/var/log/app.log,/var/log/error.log -h=192.168.1.1 -u=admin -p=22 -pk=/path/to/private/key -f=ERROR,WARN
 ```
 
 ## Configuration
 
 LogSpy relies on configuration files to define services and their respective settings. The configuration files should be placed in the same directory as the LogSpy binary and have the following formats:
 
-- `config.yaml`: Contains general configurations for LogSpy.
-- `config.services.yaml`: Defines predefined services and their connection details.
+- `/build/config.yaml`: Contains general configurations for LogSpy.
+- `/build/config.services.yaml`: Defines predefined services and their connection details.
 
 Please make sure to configure these files correctly before running LogSpy.
+Here's an example of what the file should look like:
+
+```yaml
+
+services:
+  - name: spyName
+    host: spyHost.live.com
+    user: spyUser
+    port: 22
+    #private_key_path: ~/.ssh/id_rsa   
+    krb5_conf_path: /etc/kerb5.conf
+    files:
+      - alias: spy-1
+        path: /var/log/spyPath.log
+      - alias: spy-2
+        path: /var/log/spyPath.log
+```
+
+- choose your Auth-Method for each Service between `private_key_path` and `krb5_conf_path`
+- If both are provided, the private_key_path will be used first.
+- If it fails, the krb5_conf_path will be used.
+
 
 ## Known Issues:
 - Error logging for Kerberos tickets is currently buggy and may not provide accurate error messages or handle certain scenarios correctly. This can affect the authentication process when connecting to a remote server using a Kerberos ticket.

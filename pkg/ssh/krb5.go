@@ -1,9 +1,9 @@
-package spy
+package ssh
 
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/a-dakani/logSpy/logger"
+	"github.com/a-dakani/logSpy/pkg/utils"
 	"github.com/jcmturner/gokrb5/v8/client"
 	"github.com/jcmturner/gokrb5/v8/config"
 	"github.com/jcmturner/gokrb5/v8/crypto"
@@ -39,7 +39,7 @@ func NewKrb5InitiatorClient(user string, c *config.Config) (kcl Krb5InitiatorCli
 	// Get password
 	password, err := getPassword()
 	if err != nil || password == "" {
-		logger.Warning("Unable to get password")
+		utils.Warning("Unable to get password")
 		return
 	}
 
@@ -48,12 +48,12 @@ func NewKrb5InitiatorClient(user string, c *config.Config) (kcl Krb5InitiatorCli
 
 	err = cl.Login()
 	if err != nil {
-		logger.Warning("Unable to login")
+		utils.Warning("Unable to login")
 		return
 	}
 	err = cl.AffirmLogin()
 	if err != nil {
-		logger.Warning("unable to affirm login" + err.Error())
+		utils.Warning("unable to affirm login" + err.Error())
 		return
 	}
 
@@ -177,7 +177,7 @@ func (k *Krb5InitiatorClient) DeleteSecContext() error {
 }
 
 func getPassword() (string, error) {
-	logger.Info("Enter Kerberos Password: ")
+	utils.Info("Enter Kerberos Password: ")
 	bytePassword, err := term.ReadPassword(int(syscall.Stdin))
 	if err != nil {
 		return "", err
